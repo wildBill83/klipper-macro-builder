@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Klipper Macro Builder</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #1a1a2e 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 { text-align: center; margin-bottom: 10px; font-size: 2.5rem; }
+        .subtitle { text-align: center; color: #93c5fd; margin-bottom: 40px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        @media (max-width: 1024px) { .grid { grid-template-columns: 1fr; } }
+        .section { 
+            background: rgba(255,255,255,0.1); 
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .section h2 { 
+            color: #93c5fd; 
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+        .section-content { }
+        .section-content.hidden { display: none; }
+        .chevron { transition: transform 0.3s; font-size: 1.2rem; }
+        .chevron.rotated { transform: rotate(180deg); }
+        label { display: flex; align-items: center; margin: 10px 0; cursor: pointer; }
+        input[type="checkbox"] { margin-right: 10px; width: 18px; height: 18px; cursor: pointer; }
+        input[type="text"], input[type="number"], select, textarea {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            width: 100%;
+            margin-top: 5px;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        button:hover { background: #2563eb; }
+        .output-section {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .output-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        #macroOutput {
+            background: #1a1a1a;
+            color: #4ade80;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre;
+            overflow-x: auto;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .helper-text {
+            font-size: 0.85rem;
+            color: #93c5fd;
+            margin-left: 28px;
+            margin-top: -8px;
+            margin-bottom: 10px;
+        }
+        .input-group { margin: 15px 0; }
+        .input-group label { display: block; margin-bottom: 5px; }
+        .info {
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            margin: 10px 0;
+        }
+        code { 
+            background: rgba(0,0,0,0.3); 
+            padding: 2px 6px; 
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Klipper Macro Builder</h1>
+        <p class="subtitle">Visually configure your START_PRINT and END_PRINT macros</p>
+        
+        <div class="grid">
+            <!-- START_PRINT Column -->
+            <div>
+                <div class="section">
+                    <h2 onclick="toggleSection('bedLeveling')">
+                        Bed Leveling
+                        <span class="chevron" id="chevron-bedLeveling">▼</span>
+                    </h2>
+                    <div class="section-content" id="content-bedLeveling">
+                        <label><input type="checkbox" id="homeYFirst"> Home Y Before X</label>
+                        <p class="helper-text">For bed-slinger printers</p>
+                        
+                        <label><input type="checkbox" id="bedMeshLoad" checked> Load Saved Bed Mesh</label>
+                        <div class="input-group">
+                            <input type="text" id="bedMeshName" value="default" placeholder="Mesh profile name">
+                        </div>
+                        
+                        <label><input type="checkbox" id="bedMeshCalibrate"> Calibrate Bed Mesh</label>
+                        <label style="margin-left: 28px;"><input type="checkbox" id="adaptiveMesh"> Adaptive Mesh</label>
+                        
+                        <label><input type="checkbox" id="qgl" checked> Quad Gantry Level (QGL)</label>
+                        <label><input type="checkbox" id="zTilt"> Z-Tilt Adjustment</label>
+                        <p class="helper-text">QGL and Z-Tilt are mutually exclusive</p>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2 onclick="toggleSection('heating')">
+                        Heating
+                        <span class="chevron" id="chevron-heating">▼</span>
+                    </h2>
+                    <div class="section-content" id="content-heating">
+                        <label><input type="checkbox" id="heatSoak" checked> Material-Based Heat Soak</label>
+                        <label><input type="checkbox" id="chamberControl" checked> Enable Chamber Temperature</label>
+                        <p class="helper-text">Uses slicer CHAMBER_TEMP or material defaults</p>
+                        
+                        <div class="input-group">
+                            <label>Nozzle Pre-Heat Temp (°C)</label>
+                            <input type="number" id="nozzlePreHeat" value="150" min="0" max="200">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2 onclick="toggleSection('purge')">
+                        Purge & Prime
+                        <span class="chevron" id="chevron-purge">▼</span>
+                    </h2>
+                    <div class="section-content" id="content-purge">
+                        <div class="input-group">
+                            <label>Purge Type</label>
+                            <select id="purgeType">
+                                <option value="none">None</option>
+                                <option value="adaptive" selected>Adaptive</option>
+                                <option value="line">Front Line</option>
+                                <option value="blob">Prime Blob</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- END_PRINT Column -->
+            <div>
+                <div class="section">
+                    <h2 onclick="toggleSection('parking')">
+                        Toolhead Parking
+                        <span class="chevron" id="chevron-parking">▼</span>
+                    </h2>
+                    <div class="section-content" id="content-parking">
+                        <div class="input-group">
+                            <label>Park Position</label>
+                            <select id="parkPosition">
+                                <option value="back_center" selected>Back Center</option>
+                                <option value="back_left">Back Left</option>
+                                <option value="back_right">Back Right</option>
+                                <option value="front_center">Front Center</option>
+                            </select>
+                        </div>
+                        
+                        <label><input type="checkbox" id="presentPart" checked> Present Part</label>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2 onclick="toggleSection('cooling')">
+                        Cooling & Filtration
+                        <span class="chevron" id="chevron-cooling">▼</span>
+                    </h2>
+                    <div class="section-content" id="content-cooling">
+                        <label><input type="checkbox" id="partCooling" checked> Part Cooling Fan</label>
+                        <label><input type="checkbox" id="fanCooldown" checked> Fan Cooldown</label>
+                        
+                        <div class="input-group">
+                            <label>Cooldown Time (sec)</label>
+                            <input type="number" id="cooldownTime" value="60" min="0" max="300">
+                        </div>
+                        
+                        <label><input type="checkbox" id="carbonPost" checked> Carbon Filter Post-Print</label>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2 onclick="toggleSection('powerDown')">
+                        Power Down
+                        <span class="chevron" id="chevron-powerDown">▼</span>
+                    </h2>
+                    <div class="section-content" id="content-powerDown">
+                        <label><input type="checkbox" id="resetAccel" checked> Reset Acceleration</label>
+                        <p class="helper-text">Prevents sensorless homing failures</p>
+                        <label><input type="checkbox" id="beep" checked> Completion Beep</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Output -->
+        <div class="output-section">
+            <div class="output-header">
+                <h2>Generated Macros</h2>
+                <button onclick="copyMacro()" id="copyBtn">📋 Copy to Clipboard</button>
+            </div>
+            <pre id="macroOutput"></pre>
+            
+            <div class="info" style="margin-top: 20px;">
+                <strong>📋 OrcaSlicer Setup:</strong><br>
+                Start G-code: <code>START_PRINT BED_TEMP=[bed_temperature_initial_layer_single] EXTRUDER_TEMP=[nozzle_temperature_initial_layer] FILAMENT_TYPE=[filament_type] CHAMBER_TEMP=[chamber_temperature]</code><br>
+                End G-code: <code>END_PRINT</code>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleSection(id) {
+            const content = document.getElementById('content-' + id);
+            const chevron = document.getElementById('chevron-' + id);
+            content.classList.toggle('hidden');
+            chevron.classList.toggle('rotated');
+        }
+
+        document.getElementById('qgl').addEventListener('change', function() {
+            if (this.checked) document.getElementById('zTilt').checked = false;
+            updateMacros();
+        });
+        document.getElementById('zTilt').addEventListener('change', function() {
+            if (this.checked) document.getElementById('qgl').checked = false;
+            updateMacros();
+        });
+
+        function generateMacros() {
+            const start = `[gcode_macro START_PRINT]
+gcode:
+    {% set BED_TEMP = params.BED_TEMP|default(60)|float %}
+    {% set EXTRUDER_TEMP = params.EXTRUDER_TEMP|default(200)|float %}
+    {% set FILAMENT_TYPE = params.FILAMENT_TYPE|default("PLA")|string %}
+    {% set CHAMBER_TEMP = params.CHAMBER_TEMP|default(0)|float %}
+    
+    M117 Starting print...
+    G90
+    M83
+    ${document.getElementById('beep').checked ? 'M300 S1000 P100\n    ' : ''}
+    ${document.getElementById('homeYFirst').checked ? 'G28 Y\n    G28 X Z' : 'G28'}
+    
+    M117 Heating bed...
+    M190 S{BED_TEMP}
+    ${document.getElementById('heatSoak').checked ? `
+    {% if FILAMENT_TYPE == "ABS" or FILAMENT_TYPE == "ASA" %}
+        G4 P600000
+    {% elif FILAMENT_TYPE == "PETG" %}
+        G4 P180000
+    {% endif %}` : ''}
+    ${document.getElementById('qgl').checked ? `
+    M117 QGL...
+    QUAD_GANTRY_LEVEL
+    G28 Z` : ''}${document.getElementById('zTilt').checked ? `
+    M117 Z-Tilt...
+    Z_TILT_ADJUST
+    G28 Z` : ''}
+    ${document.getElementById('nozzlePreHeat').value > 0 ? `M109 S${document.getElementById('nozzlePreHeat').value}` : ''}
+    ${document.getElementById('bedMeshCalibrate').checked ? 
+        (document.getElementById('adaptiveMesh').checked ? 'BED_MESH_CALIBRATE ADAPTIVE=1' : 'BED_MESH_CALIBRATE') : 
+        (document.getElementById('bedMeshLoad').checked ? `BED_MESH_PROFILE LOAD=${document.getElementById('bedMeshName').value}` : '')}
+    
+    M117 Heating nozzle...
+    M109 S{EXTRUDER_TEMP}
+    ${document.getElementById('chamberControl').checked ? `
+    {% if CHAMBER_TEMP > 0 %}
+        TEMPERATURE_WAIT SENSOR="temperature_sensor chamber" MINIMUM={CHAMBER_TEMP}
+    {% endif %}` : ''}
+    ${getPurgeCode()}
+    M117 Printing...
+    G92 E0`;
+
+            const end = `[gcode_macro END_PRINT]
+gcode:
+    {% set RAN = printer.print_stats.print_duration %}
+    M117 Print complete!
+    ${document.getElementById('beep').checked ? 'M300 S1000 P200\n    G4 P100\n    M300 S1000 P200\n    ' : ''}
+    G91
+    G1 E-5 F2700
+    G90
+    ${document.getElementById('partCooling').checked ? 'M106 S255\n    ' : ''}
+    {% set max_z = printer.toolhead.axis_maximum.z|float %}
+    {% if printer.toolhead.position.z < (max_z - 5) %}
+        G1 Z{max_z - 5} F600
+    {% endif %}
+    G1 X{${getParkX()}} Y{${getParkY()}} F6000
+    ${document.getElementById('presentPart').checked ? 'G1 Z{max_z * 0.8} F600\n    ' : ''}${document.getElementById('fanCooldown').checked ? `G4 P${document.getElementById('cooldownTime').value * 1000}\n    ` : ''}
+    M104 S0
+    M140 S0
+    ${document.getElementById('partCooling').checked ? 'M107\n    ' : ''}${document.getElementById('resetAccel').checked ? 'SET_VELOCITY_LIMIT VELOCITY=300 ACCEL=3000\n    ' : ''}
+    M117 Done! Time: {RAN//3600}h {(RAN%3600)//60}m {RAN%60}s
+    ${document.getElementById('carbonPost').checked ? `SET_FAN_SPEED FAN=carbon_filter SPEED=1.0
+    G4 P600000
+    SET_FAN_SPEED FAN=carbon_filter SPEED=0
+    M117 Ready` : ''}`;
+
+            return start + '\n\n' + end;
+        }
+
+        function getPurgeCode() {
+            const type = document.getElementById('purgeType').value;
+            if (type === 'adaptive') return '\n    ADAPTIVE_PURGE';
+            if (type === 'line') return `\n    G1 Z2.0 F3000
+    G1 X10 Y10 Z0.3 F5000
+    G1 X10 Y200 Z0.3 F1500 E15
+    G1 X12 Y200 Z0.3 F5000
+    G1 X12 Y10 Z0.3 F1500 E30
+    G92 E0
+    G1 Z2.0 F3000`;
+            if (type === 'blob') return `\n    G1 X10 Y10 Z0.3 F5000
+    G1 E10 F300
+    G92 E0`;
+            return '';
+        }
+
+        function getParkX() {
+            const pos = document.getElementById('parkPosition').value;
+            if (pos === 'back_center' || pos === 'front_center') return 'printer.toolhead.axis_maximum.x / 2';
+            if (pos === 'back_right') return 'printer.toolhead.axis_maximum.x - 10';
+            return '10';
+        }
+
+        function getParkY() {
+            const pos = document.getElementById('parkPosition').value;
+            if (pos.startsWith('back')) return 'printer.toolhead.axis_maximum.y - 10';
+            return '10';
+        }
+
+        function updateMacros() {
+            document.getElementById('macroOutput').textContent = generateMacros();
+        }
+
+        function copyMacro() {
+            const text = document.getElementById('macroOutput').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.getElementById('copyBtn');
+                btn.textContent = '✅ Copied!';
+                setTimeout(() => btn.textContent = '📋 Copy to Clipboard', 2000);
+            });
+        }
+
+        document.querySelectorAll('input, select').forEach(el => {
+            el.addEventListener('change', updateMacros);
+            el.addEventListener('input', updateMacros);
+        });
+
+        updateMacros();
+    </script>
+</body>
+</html>
